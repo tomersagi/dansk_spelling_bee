@@ -25,5 +25,11 @@ npm run dev
   - `components/` - React components
   - `game/` - Game logic
   - `data/` - Word lists and game data
+  - `services/` - API and utility services
+  - `assets/` - Images and other static assets
 - `public/` - Static assets
-- `styles/` - CSS styles 
+- `styles/` - CSS styles
+
+## Assets
+The game uses the following assets:
+- `src/assets/bee.jpg` - Background image and favicon for the game 

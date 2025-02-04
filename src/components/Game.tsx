@@ -59,6 +59,14 @@ const backgroundStyle = {
   zIndex: -1,
 } as const;
 
+const wordLinkStyle = {
+  textDecoration: 'none',
+  cursor: 'pointer',
+  '&:hover': {
+    textDecoration: 'underline',
+  },
+};
+
 export const Game: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -113,6 +121,32 @@ export const Game: React.FC = () => {
 
     initGame();
   }, []);
+
+  // Add keyboard event handling
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (!gameState) return;
+
+      // Convert to uppercase for comparison
+      const key = event.key.toUpperCase();
+      const validLetters = [...gameState.outerLetters, gameState.centerLetter];
+
+      if (event.key === 'Enter') {
+        handleSubmit();
+      } else if (event.key === 'Backspace' || event.key === 'Delete') {
+        handleDelete();
+      } else if (event.key === 'Escape') {
+        handleClear();
+      } else if (validLetters.includes(key)) {
+        handleLetterClick(key);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [gameState]); // Re-add listener when gameState changes
 
   const handleLetterClick = (letter: string) => {
     setGameState(prev => prev ? ({
@@ -184,6 +218,10 @@ export const Game: React.FC = () => {
     } catch (error) {
       setMessage({ text: 'Der opstod en fejl ved validering af ordet', type: 'error' });
     }
+  };
+
+  const handleWordClick = (word: string) => {
+    window.open(`https://ordnet.dk/ddo/ordbog?query=${encodeURIComponent(word)}`, '_blank');
   };
 
   if (loading || !gameState) {
@@ -266,9 +304,13 @@ export const Game: React.FC = () => {
             {gameState.foundWords.map((word, index) => (
               <Typography 
                 key={index} 
-                variant="body1"
+                component="span"
+                onClick={() => handleWordClick(word)}
                 color={gameState.pangrams.includes(word) ? 'primary' : 'inherit'}
-                sx={{ fontWeight: gameState.pangrams.includes(word) ? 'bold' : 'normal' }}
+                sx={{
+                  ...wordLinkStyle,
+                  fontWeight: gameState.pangrams.includes(word) ? 'bold' : 'normal',
+                }}
               >
                 {word}
               </Typography>

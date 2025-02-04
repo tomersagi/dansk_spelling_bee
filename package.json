@@ -8,9 +8,13 @@
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "vite",
     "dev:backend": "tsx watch src/server/index.ts",
-    "build": "vite build",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "vite build",
+    "build:backend": "tsc -p tsconfig.server.json",
+    "start": "node dist/server/index.js",
     "preview": "vite preview",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "postinstall": "npm run build"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -22,7 +26,8 @@
     "cors": "^2.8.5",
     "node-fetch": "^3.3.2",
     "cheerio": "^1.0.0-rc.12",
-    "lru-cache": "^10.1.0"
+    "lru-cache": "^10.1.0",
+    "typescript": "^5.3.3"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
@@ -31,9 +36,11 @@
     "@types/react-dom": "^18.2.18",
     "@types/express": "^4.17.21",
     "@types/cors": "^2.8.17",
-    "typescript": "^5.3.3",
     "tsx": "^4.7.0",
     "concurrently": "^8.2.2",
     "rimraf": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 } 
