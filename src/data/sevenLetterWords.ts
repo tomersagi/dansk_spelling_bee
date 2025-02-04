@@ -39,7 +39,7 @@ export const getSubwords = (word: string): string[] => {
   
   // Helper function for recursive combination generation
   const generateCombinations = (current: string, remainingLetters: string[]) => {
-    if (current.length >= 4) {
+    if (current.length > 0) {
       result.add(current);
     }
     

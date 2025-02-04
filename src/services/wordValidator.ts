@@ -49,11 +49,6 @@ class WordValidator {
   }
 
   async validateWord(word: string): Promise<ValidationResult> {
-    // Basic validation rules
-    if (word.length < 4) {
-      return { isValid: false, message: 'Ordet skal være mindst 4 bogstaver langt' };
-    }
-
     try {
       // Check cache first
       const cachedResult = await this.checkCache(word);
