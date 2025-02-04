@@ -4,6 +4,7 @@ import fetch from 'node-fetch';
 import { LRUCache } from 'lru-cache';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { existsSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,8 +25,21 @@ app.use(express.json());
 // Serve static files from the React app in production
 if (process.env.NODE_ENV === 'production') {
   const clientPath = join(__dirname, '../../client');
+  console.log('Looking for static files in:', clientPath);
+  
+  if (!existsSync(clientPath)) {
+    console.error('Client path does not exist:', clientPath);
+    console.log('Current directory:', process.cwd());
+    console.log('Directory contents:', require('fs').readdirSync(process.cwd()));
+  }
+  
   app.use(express.static(clientPath));
 }
+
+// Add a health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
 
 app.get('/api/validate-word/:word', async (req, res) => {
   try {
@@ -64,10 +78,37 @@ app.get('/api/validate-word/:word', async (req, res) => {
 // Handle React routing, return all requests to React app
 if (process.env.NODE_ENV === 'production') {
   app.get('*', (req, res) => {
-    res.sendFile(join(__dirname, '../../client/index.html'));
+    const indexPath = join(__dirname, '../../client/index.html');
+    console.log('Serving index.html from:', indexPath);
+    
+    if (!existsSync(indexPath)) {
+      console.error('index.html not found at:', indexPath);
+      return res.status(404).send('Application files not found');
+    }
+    
+    res.sendFile(indexPath);
   });
 }
 
-app.listen(port, host, () => {
-  console.log(`Server running on http://${host}:${port}`);
-}); 
+// Handle process termination gracefully
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received. Shutting down gracefully...');
+  process.exit(0);
+});
+
+// Start the server
+try {
+  app.listen(port, host, () => {
+    console.log(`Server running on http://${host}:${port}`);
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('Current working directory:', process.cwd());
+  });
+} catch (error) {
+  console.error('Failed to start server:', error);
+  process.exit(1);
+} 
