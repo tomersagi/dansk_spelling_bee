@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 import { LRUCache } from 'lru-cache';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,13 +24,14 @@ app.use(express.json());
 
 // Serve static files from the React app in production
 if (process.env.NODE_ENV === 'production') {
-  const clientPath = join(__dirname, '../../client');
+  // In production, static files are in the dist directory
+  const clientPath = join(process.cwd(), 'dist/client');
   console.log('Looking for static files in:', clientPath);
   
   if (!existsSync(clientPath)) {
     console.error('Client path does not exist:', clientPath);
     console.log('Current directory:', process.cwd());
-    console.log('Directory contents:', require('fs').readdirSync(process.cwd()));
+    console.log('Directory contents:', readdirSync(process.cwd()));
   }
   
   app.use(express.static(clientPath));
@@ -78,7 +79,7 @@ app.get('/api/validate-word/:word', async (req, res) => {
 // Handle React routing, return all requests to React app
 if (process.env.NODE_ENV === 'production') {
   app.get('*', (req, res) => {
-    const indexPath = join(__dirname, '../../client/index.html');
+    const indexPath = join(process.cwd(), 'dist/client/index.html');
     console.log('Serving index.html from:', indexPath);
     
     if (!existsSync(indexPath)) {
