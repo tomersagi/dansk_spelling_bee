@@ -71,6 +71,7 @@ export const Game: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [timeUntilNext, setTimeUntilNext] = useState<string>('');
 
   // Calculate total possible score (for progress bar)
   const maxPossibleScore = useMemo(() => {
@@ -95,6 +96,30 @@ export const Game: React.FC = () => {
       isPangram: wordIsPangram
     };
   };
+
+  // Calculate time until next puzzle
+  useEffect(() => {
+    const updateTimer = () => {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      
+      const diff = tomorrow.getTime() - now.getTime();
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      setTimeUntilNext(
+        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+      );
+    };
+
+    // Update immediately and then every second
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const initGame = async () => {
@@ -246,6 +271,10 @@ export const Game: React.FC = () => {
       <Box sx={{ textAlign: 'center', mt: 4, position: 'relative' }}>
         <Typography variant="h4" gutterBottom>
           Dansk Spelling Bee
+        </Typography>
+
+        <Typography variant="subtitle1" color="textSecondary" gutterBottom>
+          Næste ord om {timeUntilNext}
         </Typography>
         
         <Box sx={{ mb: 2 }}>

@@ -29,26 +29,20 @@ class PuzzleGenerator {
     }
   }
 
-  private async getValidRandomWord(): Promise<string> {
-    // Filter words to ensure they have exactly 7 unique letters
-    const validWords = sevenLetterWords.filter(word => {
-      const uniqueLetters = new Set(word.split(''));
-      return uniqueLetters.size === 7;
-    });
-
-    if (validWords.length === 0) {
-      throw new Error('No valid words found with 7 unique letters');
+  private getDailyWord(date: Date): string {
+    const dateString = date.toISOString().split('T')[0];
+    const dailyWord = sevenLetterWords.find(w => w.date === dateString);
+    
+    if (!dailyWord) {
+      // If no word found for today, use modulo to cycle through the list
+      const daysSinceStart = Math.floor(
+        (date.getTime() - new Date('2025-02-04').getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const index = daysSinceStart % sevenLetterWords.length;
+      return sevenLetterWords[index].word;
     }
-
-    // Try words randomly until we find one that's valid in the dictionary
-    const shuffledWords = this.shuffleArray(validWords);
-    for (const word of shuffledWords) {
-      if (await this.validateWord(word)) {
-        return word;
-      }
-    }
-
-    throw new Error('No valid pangrams found in the dictionary');
+    
+    return dailyWord.word;
   }
 
   private shuffleArray<T>(array: T[]): T[] {
@@ -60,62 +54,16 @@ class PuzzleGenerator {
     return shuffled;
   }
 
-  async generatePuzzle(): Promise<Puzzle> {
-    const word = await this.getValidRandomWord();
-    const letters = word.split('');
-    
-    // Randomly select center letter
-    const centerIndex = Math.floor(Math.random() * letters.length);
-    const centerLetter = letters[centerIndex];
-    
-    // Remove center letter and shuffle remaining letters
-    letters.splice(centerIndex, 1);
-    const outerLetters = this.shuffleArray(letters);
-
-    return {
-      centerLetter,
-      outerLetters,
-      originalWord: word
-    };
-  }
-
-  // Generate puzzle for a specific date (same puzzle for everyone on the same day)
   async generateDailyPuzzle(date: Date = new Date()): Promise<Puzzle> {
-    // Use the date to seed the random selection
-    const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD
+    const word = this.getDailyWord(date);
+    const letters = word.split('');
+
+    // Use the date to deterministically select the center letter
+    const dateString = date.toISOString().split('T')[0];
     const dateHash = Array.from(dateString).reduce((acc, char) => {
       return acc + char.charCodeAt(0);
     }, 0);
-
-    // Filter words to ensure they have exactly 7 unique letters
-    const validWords = sevenLetterWords.filter(word => {
-      const uniqueLetters = new Set(word.split(''));
-      return uniqueLetters.size === 7;
-    });
-
-    if (validWords.length === 0) {
-      throw new Error('No valid words found with 7 unique letters');
-    }
-
-    // Try words in a deterministic order based on the date until we find a valid one
-    const shuffledWords = this.shuffleArray(validWords);
-    let validWord = null;
     
-    for (let i = 0; i < shuffledWords.length; i++) {
-      const wordIndex = (dateHash + i) % shuffledWords.length;
-      const word = shuffledWords[wordIndex];
-      if (await this.validateWord(word)) {
-        validWord = word;
-        break;
-      }
-    }
-
-    if (!validWord) {
-      throw new Error('No valid pangrams found in the dictionary');
-    }
-
-    const letters = validWord.split('');
-    // Use the hash to select center letter
     const centerIndex = dateHash % letters.length;
     const centerLetter = letters[centerIndex];
 
@@ -126,7 +74,7 @@ class PuzzleGenerator {
     return {
       centerLetter,
       outerLetters,
-      originalWord: validWord
+      originalWord: word
     };
   }
 
