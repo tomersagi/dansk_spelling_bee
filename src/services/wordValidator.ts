@@ -5,6 +5,16 @@ interface ValidationResult {
 
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
+// Get the base URL for API calls
+const getApiUrl = () => {
+  if (import.meta.env.PROD) {
+    // In production, use the same host as the page
+    return '';
+  }
+  // In development, use localhost:3001
+  return 'http://localhost:3001';
+};
+
 class WordValidator {
   private cache: Map<string, { result: boolean; timestamp: number }> = new Map();
 
@@ -21,7 +31,8 @@ class WordValidator {
 
   private async fetchFromDictionary(word: string): Promise<boolean> {
     try {
-      const response = await fetch(`http://localhost:3001/api/validate-word/${encodeURIComponent(word)}`);
+      const baseUrl = getApiUrl();
+      const response = await fetch(`${baseUrl}/api/validate-word/${encodeURIComponent(word)}`);
       const data = await response.json();
       
       // Cache the result
