@@ -12,6 +12,7 @@ interface GameState {
   score: number;
   pangrams: string[];
   puzzle: Puzzle;
+  highScore: number;
 }
 
 interface WordScore {
@@ -121,10 +122,24 @@ export const Game: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Add function to fetch high score
+  const fetchHighScore = async () => {
+    try {
+      const response = await fetch('/api/todays-high-score');
+      const data = await response.json();
+      return data.highScore;
+    } catch (error) {
+      console.error('Error fetching high score:', error);
+      return 50; // Default fallback
+    }
+  };
+
+  // Modify the initGame function in the useEffect
   useEffect(() => {
     const initGame = async () => {
       try {
         const puzzle = await puzzleGenerator.generateDailyPuzzle();
+        const highScore = await fetchHighScore();
         setGameState({
           centerLetter: puzzle.centerLetter,
           outerLetters: puzzle.outerLetters,
@@ -133,6 +148,7 @@ export const Game: React.FC = () => {
           score: 0,
           pangrams: [],
           puzzle,
+          highScore,
         });
       } catch (error) {
         setMessage({ 
@@ -281,35 +297,97 @@ export const Game: React.FC = () => {
           <Typography variant="h6" color="primary">
             Score: {gameState.score}
           </Typography>
-          <LinearProgress 
-            variant="determinate" 
-            value={(gameState.score / maxPossibleScore) * 100} 
-            sx={{ mt: 1 }}
-          />
+          <Box sx={{ position: 'relative', mt: 1 }}>
+            <LinearProgress 
+              variant="determinate" 
+              value={(gameState.score / gameState.highScore) * 100} 
+              sx={{ mt: 1 }}
+            />
+            <Box
+              sx={{
+                position: 'absolute',
+                right: `${(gameState.highScore / gameState.highScore) * 100}%`,
+                top: 0,
+                bottom: 0,
+                width: 2,
+                bgcolor: 'success.main',
+                transform: 'translateX(50%)',
+              }}
+            />
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                position: 'absolute',
+                right: `${(gameState.highScore / gameState.highScore) * 100}%`,
+                top: -20,
+                transform: 'translateX(50%)',
+                color: 'success.main',
+              }}
+            >
+              {gameState.highScore}
+            </Typography>
+          </Box>
         </Box>
         
         <Typography variant="h5" sx={{ mb: 2 }}>
           {gameState.currentWord || ' '}
         </Typography>
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-          {gameState.outerLetters.map((letter, index) => (
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, mb: 2 }}>
+          {/* Top row - first two letters */}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {gameState.outerLetters.slice(0, 2).map((letter, index) => (
+              <Button
+                key={index}
+                variant="contained"
+                onClick={() => handleLetterClick(letter)}
+                sx={outerLetterStyle}
+              >
+                {letter}
+              </Button>
+            ))}
+          </Box>
+
+          {/* Middle row - 2 outer letters + center letter */}
+          <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
-              key={index}
               variant="contained"
-              onClick={() => handleLetterClick(letter)}
+              onClick={() => handleLetterClick(gameState.outerLetters[2])}
               sx={outerLetterStyle}
             >
-              {letter}
+              {gameState.outerLetters[2]}
             </Button>
-          ))}
-          <Button
-            variant="contained"
-            onClick={() => handleLetterClick(gameState.centerLetter)}
-            sx={centerLetterStyle}
-          >
-            {gameState.centerLetter}
-          </Button>
+            
+            <Button
+              variant="contained"
+              onClick={() => handleLetterClick(gameState.centerLetter)}
+              sx={centerLetterStyle}
+            >
+              {gameState.centerLetter}
+            </Button>
+
+            <Button
+              variant="contained"
+              onClick={() => handleLetterClick(gameState.outerLetters[3])}
+              sx={outerLetterStyle}
+            >
+              {gameState.outerLetters[3]}
+            </Button>
+          </Box>
+
+          {/* Bottom row - last two letters */}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {gameState.outerLetters.slice(4).map((letter, index) => (
+              <Button
+                key={index + 4}
+                variant="contained"
+                onClick={() => handleLetterClick(letter)}
+                sx={outerLetterStyle}
+              >
+                {letter}
+              </Button>
+            ))}
+          </Box>
         </Box>
 
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 4 }}>
