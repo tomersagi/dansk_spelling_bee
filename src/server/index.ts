@@ -5,6 +5,7 @@ import { LRUCache } from 'lru-cache';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync, readdirSync } from 'fs';
+import { puzzleGenerator } from '../services/puzzleGenerator';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -23,6 +24,7 @@ interface DailyWords {
   date: string;
   words: Map<string, boolean>; // word -> isValid
   highScore: number;
+  pangram: string;
 }
 
 // Configure LRU cache and daily words tracking
@@ -34,18 +36,43 @@ const cache = new LRUCache({
 let dailyWords: DailyWords = {
   date: new Date().toISOString().split('T')[0],
   words: new Map(),
-  highScore: 0
+  highScore: 0,
+  pangram: ''
 };
 
+// Add function to initialize daily words with pangram
+async function initializeDailyWords(pangram: string) {
+  dailyWords.pangram = pangram;
+  dailyWords.words.set(pangram.toLowerCase(), true);
+}
+
 // Add function to reset daily words if needed
-function checkAndResetDailyWords() {
+async function checkAndResetDailyWords() {
   const currentDate = new Date().toISOString().split('T')[0];
   if (dailyWords.date !== currentDate) {
-    dailyWords = {
-      date: currentDate,
-      words: new Map(),
-      highScore: 0
-    };
+    // Get today's puzzle to get the pangram
+    try {
+      const puzzle = await puzzleGenerator.generateDailyPuzzle(new Date());
+      
+      dailyWords = {
+        date: currentDate,
+        words: new Map(),
+        highScore: 0,
+        pangram: puzzle.originalWord
+      };
+      
+      // Initialize with the pangram
+      dailyWords.words.set(puzzle.originalWord.toLowerCase(), true);
+    } catch (error) {
+      console.error('Error getting daily puzzle pangram:', error);
+      // Fallback to empty initialization if puzzle generation fails
+      dailyWords = {
+        date: currentDate,
+        words: new Map(),
+        highScore: 0,
+        pangram: ''
+      };
+    }
   }
 }
 
