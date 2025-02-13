@@ -7,7 +7,15 @@ interface DailyWord {
 
 // Copy the sevenLetterWords array directly here to avoid import issues
 const sevenLetterWords: DailyWord[] = [
-  // ... copy the array from sevenLetterWords.ts ...
+  // February 2025
+  { word: 'KRAFTIG', date: '2025-02-04', meaning: 'powerful' },
+  { word: 'SPRÆNGT', date: '2025-02-05', meaning: 'exploded' },
+  { word: 'KLATRES', date: '2025-02-06', meaning: 'climb' },
+  { word: 'SPILDTE', date: '2025-02-07', meaning: 'spilled' },
+  { word: 'PLANTER', date: '2025-02-08', meaning: 'plants' },
+  { word: 'KLISTER', date: '2025-02-09', meaning: 'glue' },
+  { word: 'STRØMPE', date: '2025-02-10', meaning: 'stocking' },
+  // ... rest of the array from sevenLetterWords.ts
 ];
 
 export interface Puzzle {
