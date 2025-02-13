@@ -13,11 +13,38 @@ const app = express();
 const port = parseInt(process.env.PORT || '3001', 10);
 const host = process.env.HOST || '0.0.0.0';
 
-// Configure LRU cache
+// Add interface for word validation
+interface WordValidation {
+  isValid: boolean;
+  message: string;
+}
+
+interface DailyWords {
+  date: string;
+  words: Map<string, boolean>; // word -> isValid
+}
+
+// Configure LRU cache and daily words tracking
 const cache = new LRUCache({
-  max: 500, // Maximum number of items to store
-  ttl: 1000 * 60 * 60 * 24, // 24 hours
+  max: 500,
+  ttl: 1000 * 60 * 60 * 24,
 });
+
+let dailyWords: DailyWords = {
+  date: new Date().toISOString().split('T')[0],
+  words: new Map()
+};
+
+// Add function to reset daily words if needed
+function checkAndResetDailyWords() {
+  const currentDate = new Date().toISOString().split('T')[0];
+  if (dailyWords.date !== currentDate) {
+    dailyWords = {
+      date: currentDate,
+      words: new Map()
+    };
+  }
+}
 
 app.use(cors());
 app.use(express.json());
@@ -42,20 +69,42 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Add endpoint to get today's high score
+app.get('/api/todays-high-score', (req, res) => {
+  checkAndResetDailyWords();
+  const validWordsCount = Array.from(dailyWords.words.values()).filter(isValid => isValid).length;
+  const highScore = Math.max(50, validWordsCount);
+  res.json({ highScore });
+});
+
+// Modify the validate-word endpoint
 app.get('/api/validate-word/:word', async (req, res) => {
   try {
     const { word } = req.params;
+    checkAndResetDailyWords();
     
-    // Check cache first
+    // First check daily words
+    if (dailyWords.words.has(word)) {
+      const isValid = dailyWords.words.get(word);
+      const result = {
+        isValid,
+        message: isValid ? 'Gyldig' : 'Ikke et gyldigt dansk ord'
+      };
+      return res.json(result);
+    }
+    
+    // Then check cache
     const cached = cache.get(word);
     if (cached !== undefined) {
+      // Add to daily words
+      dailyWords.words.set(word, (cached as WordValidation).isValid);
       return res.json(cached);
     }
 
+    // If not found, check ordnet.dk
     const response = await fetch(`https://ordnet.dk/ddo/ordbog?query=${encodeURIComponent(word)}`);
     const html = await response.text();
     
-    // If the page contains "Der er ingen resultater med", the word doesn't exist
     const isInvalid = html.includes('Der er ingen resultater med');
     
     const result = {
@@ -63,8 +112,9 @@ app.get('/api/validate-word/:word', async (req, res) => {
       message: !isInvalid ? 'Gyldig' : 'Ikke et gyldigt dansk ord'
     };
 
-    // Cache the result
+    // Cache the result and add to daily words
     cache.set(word, result);
+    dailyWords.words.set(word, !isInvalid);
     
     res.json(result);
   } catch (error) {
