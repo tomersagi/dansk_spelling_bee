@@ -294,19 +294,28 @@ export const Game: React.FC = () => {
         </Typography>
         
         <Box sx={{ mb: 2 }}>
-          <Typography variant="h6" color="primary">
-            Score: {gameState.score}
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6" color="primary">
+              Score: {gameState.score}
+            </Typography>
+            <Typography variant="h6" color="success.main">
+              Daily High Score: {gameState.highScore}
+            </Typography>
+          </Box>
           <Box sx={{ position: 'relative', mt: 1 }}>
             <LinearProgress 
               variant="determinate" 
               value={(gameState.score / gameState.highScore) * 100} 
-              sx={{ mt: 1 }}
+              sx={{ 
+                mt: 1,
+                height: 8, // Make the progress bar a bit thicker
+                backgroundColor: 'rgba(0, 0, 0, 0.1)', // Lighter background
+              }}
             />
             <Box
               sx={{
                 position: 'absolute',
-                right: `${(gameState.highScore / gameState.highScore) * 100}%`,
+                right: 0,
                 top: 0,
                 bottom: 0,
                 width: 2,
@@ -314,18 +323,6 @@ export const Game: React.FC = () => {
                 transform: 'translateX(50%)',
               }}
             />
-            <Typography 
-              variant="caption" 
-              sx={{ 
-                position: 'absolute',
-                right: `${(gameState.highScore / gameState.highScore) * 100}%`,
-                top: -20,
-                transform: 'translateX(50%)',
-                color: 'success.main',
-              }}
-            >
-              {gameState.highScore}
-            </Typography>
           </Box>
         </Box>
         
