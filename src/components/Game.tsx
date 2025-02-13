@@ -213,6 +213,23 @@ export const Game: React.FC = () => {
     });
   };
 
+  // Add periodic high score update
+  useEffect(() => {
+    if (!gameState) return;
+
+    const updateHighScore = async () => {
+      const newHighScore = await fetchHighScore();
+      setGameState(prev => prev ? ({
+        ...prev,
+        highScore: newHighScore
+      }) : null);
+    };
+
+    // Update high score every 30 seconds
+    const interval = setInterval(updateHighScore, 30000);
+    return () => clearInterval(interval);
+  }, [gameState]);
+
   const handleSubmit = async () => {
     if (!gameState) return;
 
@@ -241,11 +258,17 @@ export const Game: React.FC = () => {
       
       if (validation.isValid) {
         const wordScore = calculateWordScore(word);
+        const newTotalScore = gameState.score + wordScore.score;
+        
+        // Fetch the latest high score after adding a new word
+        const newHighScore = await fetchHighScore();
+
         setGameState(prev => prev ? ({
           ...prev,
           foundWords: [...prev.foundWords, word],
           currentWord: '',
-          score: prev.score + wordScore.score,
+          score: newTotalScore,
+          highScore: newHighScore,
           pangrams: wordScore.isPangram ? [...prev.pangrams, word] : prev.pangrams,
         }) : null);
         

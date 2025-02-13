@@ -22,6 +22,7 @@ interface WordValidation {
 interface DailyWords {
   date: string;
   words: Map<string, boolean>; // word -> isValid
+  highScore: number;
 }
 
 // Configure LRU cache and daily words tracking
@@ -32,7 +33,8 @@ const cache = new LRUCache({
 
 let dailyWords: DailyWords = {
   date: new Date().toISOString().split('T')[0],
-  words: new Map()
+  words: new Map(),
+  highScore: 0
 };
 
 // Add function to reset daily words if needed
@@ -41,9 +43,18 @@ function checkAndResetDailyWords() {
   if (dailyWords.date !== currentDate) {
     dailyWords = {
       date: currentDate,
-      words: new Map()
+      words: new Map(),
+      highScore: 0
     };
   }
+}
+
+// Modify the function to calculate word score (add this near the top)
+function calculateWordScore(word: string, letters: string[]): number {
+  // Check if it's a pangram (uses all letters)
+  const uniqueLetters = new Set(word.toLowerCase());
+  const isPangram = letters.every(letter => uniqueLetters.has(letter.toLowerCase()));
+  return word.length + (isPangram ? 5 : 0);
 }
 
 app.use(cors());
@@ -69,11 +80,21 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Add endpoint to get today's high score
+// Modify the GET endpoint for today's high score
 app.get('/api/todays-high-score', (req, res) => {
   checkAndResetDailyWords();
-  const validWordsCount = Array.from(dailyWords.words.values()).filter(isValid => isValid).length;
-  const highScore = Math.max(50, validWordsCount);
+  
+  // Get all valid words
+  const validWords = Array.from(dailyWords.words.entries())
+    .filter(([_, isValid]) => isValid)
+    .map(([word]) => word);
+
+  // Calculate total possible score from all valid words
+  const letters = Array.from(new Set(validWords.join(''))); // Get unique letters for pangram checking
+  const totalScore = validWords.reduce((sum, word) => sum + calculateWordScore(word, letters), 0);
+  
+  // Return at least 50 as the minimum high score
+  const highScore = Math.max(50, totalScore);
   res.json({ highScore });
 });
 
