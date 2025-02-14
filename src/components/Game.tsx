@@ -13,6 +13,7 @@ interface GameState {
   pangrams: string[];
   puzzle: Puzzle;
   highScore: number;
+  submitting: boolean;
 }
 
 interface WordScore {
@@ -149,6 +150,7 @@ export const Game: React.FC = () => {
           pangrams: [],
           puzzle,
           highScore,
+          submitting: false,
         });
       } catch (error) {
         setMessage({ 
@@ -231,7 +233,7 @@ export const Game: React.FC = () => {
   }, [gameState]);
 
   const handleSubmit = async () => {
-    if (!gameState) return;
+    if (!gameState || gameState.submitting) return;
 
     const word = gameState.currentWord.toLowerCase();
     
@@ -253,6 +255,9 @@ export const Game: React.FC = () => {
       return;
     }
 
+    // Set submitting state
+    setGameState(prev => prev ? ({ ...prev, submitting: true }) : null);
+
     try {
       const validation = await wordValidator.validateWord(word);
       
@@ -270,6 +275,7 @@ export const Game: React.FC = () => {
           score: newTotalScore,
           highScore: newHighScore,
           pangrams: wordScore.isPangram ? [...prev.pangrams, word] : prev.pangrams,
+          submitting: false,
         }) : null);
         
         const message = wordScore.isPangram 
@@ -277,9 +283,11 @@ export const Game: React.FC = () => {
           : `+${wordScore.score} point!`;
         setMessage({ text: message, type: 'success' });
       } else {
+        setGameState(prev => prev ? ({ ...prev, submitting: false }) : null);
         setMessage({ text: validation.message || 'Ikke et gyldigt ord', type: 'error' });
       }
     } catch (error) {
+      setGameState(prev => prev ? ({ ...prev, submitting: false }) : null);
       setMessage({ text: 'Der opstod en fejl ved validering af ordet', type: 'error' });
     }
   };
@@ -349,8 +357,8 @@ export const Game: React.FC = () => {
           </Box>
         </Box>
         
-        <Typography variant="h5" sx={{ mb: 2 }}>
-          {gameState.currentWord || ' '}
+        <Typography variant="h5" sx={{ mb: 2, minHeight: '2em' }}>
+          {gameState.currentWord || '\u00A0'}
         </Typography>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -417,8 +425,12 @@ export const Game: React.FC = () => {
           <Button variant="outlined" onClick={handleClear}>
             Ryd
           </Button>
-          <Button variant="contained" onClick={handleSubmit}>
-            Enter
+          <Button 
+            variant="contained" 
+            onClick={handleSubmit}
+            disabled={gameState.submitting}
+          >
+            {gameState.submitting ? 'Checker...' : 'Enter'}
           </Button>
         </Box>
 
